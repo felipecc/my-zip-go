@@ -18,15 +18,15 @@ type FileHeader struct {
 func CompressBytes(data []byte) ([]byte, error) {
 	var buff bytes.Buffer
 
-	zNew := zlib.NewWriter(&buff)
+	zw := zlib.NewWriter(&buff)
 
-	_, err := zNew.Write(data)
+	_, err := zw.Write(data)
 
 	if err != nil {
 		return nil, fmt.Errorf("error compressing data: %v", err)
 	}
 
-	err = zNew.Close()
+	err = zw.Close()
 
 	if err != nil {
 		return nil, fmt.Errorf("error closing writer: %v", err)
@@ -37,17 +37,17 @@ func CompressBytes(data []byte) ([]byte, error) {
 
 func DecompressBytes(data []byte) ([]byte, error) {
 
-	rNew, err := zlib.NewReader(bytes.NewReader(data))
+	zr, err := zlib.NewReader(bytes.NewReader(data))
 
 	if err != nil {
 		return nil, fmt.Errorf("error decompressing data: %v", err)
 	}
 
-	defer rNew.Close()
+		defer zr.Close()
 
 	var out bytes.Buffer
 
-	_, err = io.Copy(&out, rNew)
+	_, err = io.Copy(&out, zr)
 
 	if err != nil {
 		return nil, fmt.Errorf("error decompressing data: %v", err)
