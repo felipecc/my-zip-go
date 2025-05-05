@@ -6,7 +6,7 @@
 A ideia geral do projeto seria entender como um compactor funciona, e como ele pode ser feito em Go. Inicialmente usei o zlib como lib de compressão, e o restante da estrutura da implementação foi feita para que eu entenda o como fazer isso em `go` e ainda conseguisse uma organização da estrutura.
 O que imaginei, foi criar uma estrutura de saída de arquivo  que fosse divida em duas partes:
 
-1. Um cabecalho que contenha o nome do arquivo, seu tamanho original e o tamanho comprimido.
+1. Um cabeçalho que contenha o nome do arquivo, seu tamanho original e o tamanho comprimido.
 2. O conteudo do arquivo.
 
 Como programa  seria necessário criar as seguintes funções:
@@ -34,13 +34,13 @@ O arquivo de saída terá o diagrama de estrutura de arquivo a seguir:
 FileHeader é a estrutura de arquivo que contem o nome do arquivo, seu tamanho original e o tamanho comprimido. No arquivo de saída vamos escreve-la em binário, para eliminar a etapa da tradução da estrutura.
 
 ```
- *--------
- | NameLength |
- *--------
- | OriginalSize |
- *--------
+ *----------------*
+ | NameLength     |
+ *----------------*
+ | OriginalSize   |
+ *----------------*
  | CompressedSize |
- *--------
+ *----------------*
 ```
 
 ```go
@@ -53,10 +53,74 @@ type  struct {
 
 ### CompressBytes
 
-A função `CompressBytes` recebe um slice de bytes e retorna um slice de bytes comprimidos ou um erro.
+A função `CompressBytes` recebe um slice de bytes e retorna um slice de bytes para serem comprimidos ou um erro.
 
 ```go
-func CompressBytes(data []byte) ([]byte, error)
+func CompressBytes(data []byte) ([]byte, error) {
+	
+	var buff bytes.Buffer
+
+	zw := zlib.NewWriter(&buff)
+
+	_, err := zw.Write(data)
+
+	if err != nil {
+		return nil, fmt.Errorf("error compressing data: %v", err)
+	}
+
+	err = zw.Close()
+
+	if err != nil {
+		return nil, fmt.Errorf("error closing writer: %v", err)
+	}
+
+	return buff.Bytes(), nil
+}
 ```
+
+Na função `CompressBytes`, o processo de compressão ocorre da seguinte forma:
+
+1. Primeiro, criamos um buffer (`buff`) usando `bytes.Buffer` para armazenar os dados comprimidos
+2. Em seguida, criamos um escritor zlib (`zw`) usando `zlib.NewWriter(&buff)`, que implementa a interface `io.Writer`
+3. Utilizamos o método `Write` do escritor zlib para escrever os dados (`data`) no buffer, realizando a compressão
+4. Fechamos o escritor zlib usando `zw.Close()` para garantir que todos os dados sejam escritos no buffer
+5. Por fim, retornamos os bytes comprimidos usando `buff.Bytes()`
+
+### DecompressBytes
+
+A função `DecompressBytes` recebe um slice de bytes compromidos e retorna um slice de bytes ou um erro.
+
+```go
+func DecompressBytes(data []byte) ([]byte, error) {
+
+	zr, err := zlib.NewReader(bytes.NewReader(data))
+
+	if err != nil {
+		return nil, fmt.Errorf("error decompressing data: %v", err)
+	}
+
+	defer zr.Close()
+
+	var out bytes.Buffer
+
+	_, err = io.Copy(&out, zr)
+
+	if err != nil {
+		return nil, fmt.Errorf("error decompressing data: %v", err)
+	}
+
+	return out.Bytes(), nil
+}
+```
+
+Na função `DecompressBytes`, o processo de descompressão ocorre da seguinte forma:
+
+1. Convertemos os dados comprimidos (`data`) em um `bytes.Reader` usando `bytes.NewReader(data)`
+2. Em seguida, criamos um leitor zlib (`zr`) usando `zlib.NewReader`, que implementa a interface `io.Reader`
+3. Criado um buffer (`out`) para armazenar os dados descomprimidos
+4. O `io.Copy` para copiar os dados do leitor zlib (`zr`) para o buffer (`out`). A ordem dos parâmetros é importante: primeiro o destino (`&out`), depois a fonte (`zr`)
+5. Retornamos os bytes descomprimidos usando `out.Bytes()`
+
+O uso de `&out` é necessário porque o `io.Copy` precisa modificar o buffer para armazenar os dados descomprimidos, então passamos o endereço de memória do buffer.
 
 
