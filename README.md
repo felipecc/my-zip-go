@@ -124,3 +124,74 @@ Na função `DecompressBytes`, o processo de descompressão ocorre da seguinte f
 O uso de `&out` é necessário porque o `io.Copy` precisa modificar o buffer para armazenar os dados descomprimidos, então passamos o endereço de memória do buffer.
 
 
+### writeCompressedFile
+
+A função `writeCompressedFile` recebe um nome de arquivo e um slice de bytes comprimidos e escreve o conteúdo em um arquivo com o nome de saída.
+
+```go
+func writeCompressedFile(fileName string, compressedData []byte) error {
+	file, err := os.Stat(fileName)
+	if err != nil {
+		return fmt.Errorf("error getting file info: %v", err)
+	}
+
+	originalFileSize := uint32(file.Size())
+
+	fileNameInBytes := []byte(file.Name())
+	fileNameLengh := uint32(len(fileNameInBytes))
+
+	outPutFile, err := os.Create(fmt.Sprintf("%s.%s", fileName, "myz"))
+
+	if err != nil {
+		return fmt.Errorf("error creating output file: %v", err)
+	}
+
+	defer outPutFile.Close()
+
+	header := FileHeader{
+		NameLength:     fileNameLengh,
+		OriginalSize:   originalFileSize,
+		CompressedSize: uint32(len(compressedData)),
+	}
+
+	// escreve o header no arquivo como binario, aqui a forma de escrever é diferente
+	binary.Write(outPutFile, binary.LittleEndian, header)
+
+	// escreve o nome do arquivo em []byte
+	outPutFile.Write(fileNameInBytes)
+
+	// escreve o conteudo comprimido em []byte
+	outPutFile.Write(compressedData)
+
+	return nil
+}
+```
+
+os.Stat retorna uma implementação da interface `fs.FileInfo` que contem informações sobre o arquivo.
+
+```go
+type FileInfo interface {
+	Name() string       // base name of the file
+	Size() int64        // length in bytes for regular files; system-dependent for others
+	Mode() FileMode     // file mode bits
+	ModTime() time.Time // modification time
+	IsDir() bool        // abbreviation for Mode().IsDir()
+	Sys() any           // underlying data source (can return nil)
+}
+```
+Estas informações são usadas para preencher o `FileHeader`. Com o `os.Create` criamos o arquivo de saída e o retornamos como `outPutFile`.
+O `defer outPutFile.Close()` é usado para garantir que o arquivo seja fechado quando a função `writeCompressedFile` terminar.
+Para escrever o cabeçalho, vamos escrever em binário usando `binary.Write`, nesta etapa economizamos a etapa de serialização do cabeçalho. Os parametros da função `binary.Write` são:
+
+
+
+
+
+
+
+
+
+
+
+
+
