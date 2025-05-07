@@ -43,7 +43,7 @@ func DecompressBytes(data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("error decompressing data: %v", err)
 	}
 
-		defer zr.Close()
+	defer zr.Close()
 
 	var out bytes.Buffer
 
