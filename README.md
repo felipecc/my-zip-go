@@ -181,7 +181,52 @@ type FileInfo interface {
 ```
 Estas informações são usadas para preencher o `FileHeader`. Com o `os.Create` criamos o arquivo de saída e o retornamos como `outPutFile`.
 O `defer outPutFile.Close()` é usado para garantir que o arquivo seja fechado quando a função `writeCompressedFile` terminar.
-Para escrever o cabeçalho, vamos escrever em binário usando `binary.Write`, nesta etapa economizamos a etapa de serialização do cabeçalho. Os parametros da função `binary.Write` são:
+Para escrever o cabeçalho, vamos escrever em binário usando `binary.Write`, com isso serializamos o cabeçalho lendo direto na estrutura `FileHeader`. Os parametros da função `binary.Write` são:
+
+```go
+func Write(w io.Writer, order ByteOrder, data any) error
+
+w: é o escritor, no caso o arquivo de saída
+order: é o endianness, no caso little endian
+data: é o dado da estrutura do tipo `FileHeader` que deve ter um valor fixo.
+```
+
+#### Explicação: Endianness
+
+Endiannes é o conceito da computação que descreve a ordem dos bytes usandos para representar dados multi-byte(como inteiros 16, 32 e 64 bits) na memória do computador.
+
+Tipos principais de Endianness:
+
+Big-endian (BE): O byte mais significativo vem primeiro na menor posição de memória.
+Exemplo:
+```
+O número 0x12345678 ficaria assim:
+Endereço:  0x00  0x01  0x02  0x03
+Valor:     0x12  0x34  0x56  0x78
+```	
+
+Little-endian (LE): O byte mais significativo vem por último na posição de memória.
+Exemplo:
+```
+O número 0x12345678 ficaria assim:
+Endereço:  0x00  0x01  0x02  0x03
+Valor:     0x78  0x56  0x34  0x12
+```
+
+## Por que isso importa?
+ - Interoperabilidade: Ao trocar dados entre máquinas com endianness diferentes (por exemplo, um servidor x86 com little-endian e um sistema de rede big-endian), é preciso fazer conversão.
+ - Desempenho: Alguns processadores são otimizados para uma ordem específica.
+ - Redes: O padrão da internet (RFC 1700) define que a ordem dos bytes em protocolos de rede deve ser big-endian (também chamada de network byte order).
+
+
+
+
+
+
+
+
+
+
 
 
 

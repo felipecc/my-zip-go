@@ -81,13 +81,10 @@ func writeCompressedFile(fileName string, compressedData []byte) error {
 		CompressedSize: uint32(len(compressedData)),
 	}
 
-	// escreve o header no arquivo como binario, aqui a forma de escrever é diferente
 	binary.Write(outPutFile, binary.LittleEndian, header)
 
-	// escreve o nome do arquivo em []byte
 	outPutFile.Write(fileNameInBytes)
 
-	// escreve o conteudo comprimido em []byte
 	outPutFile.Write(compressedData)
 
 	return nil
@@ -95,7 +92,6 @@ func writeCompressedFile(fileName string, compressedData []byte) error {
 
 func readCompressedFile(fileWithPath string, outPutFileName string) error {
 
-	// abre o arquivo para leitura
 	file, err := os.Open(fileWithPath)
 	if err != nil {
 		return fmt.Errorf("error opening file: %v", err)
@@ -113,9 +109,6 @@ func readCompressedFile(fileWithPath string, outPutFileName string) error {
 	fileName := string(fileNameInBytes)
 	fmt.Println("fileName", fileName)
 
-	// compressedData vai conter o conteudo comprimido que esta em bytes
-	// ele aqui o tamanho vem do header.CompressedSize
-	// o Read vai ler o conteudo do tamanho do header.CompressedSize
 	compressedData := make([]byte, header.CompressedSize)
 	n, err = file.Read(compressedData)
 	if err != nil || uint32(n) != header.CompressedSize {
@@ -163,7 +156,6 @@ func compressAndSave(filePath string) error {
 }
 
 func main() {
-	// Primeiro comprimimos o arquivo
 	err := compressAndSave("example.txt")
 	if err != nil {
 		fmt.Printf("Error in compressing file: %v\n", err)
@@ -171,7 +163,6 @@ func main() {
 	}
 	fmt.Println("File compressed successfully!")
 
-	// Depois descomprimimos o arquivo
 	err = readCompressedFile("example.txt.myz", "example_decompressed.txt")
 	if err != nil {
 		fmt.Printf("Error in decompressing file: %v\n", err)
